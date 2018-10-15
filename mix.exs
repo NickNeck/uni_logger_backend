@@ -1,13 +1,13 @@
-defmodule FunLoggerBackend.MixProject do
+defmodule ProcessLoggerBackende.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :fun_logger_backend,
-      version: "0.1.0",
+      app: :process_logger_backend,
+      deps: deps(),
       elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      version: "0.1.0"
     ]
   end
 

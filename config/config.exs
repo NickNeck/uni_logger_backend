@@ -2,6 +2,8 @@
 # and its dependencies with the aid of the Mix.Config module.
 use Mix.Config
 
+config :logger, :backends, []
+
 # This configuration is loaded before any dependency and is restricted
 # to this project. If another project depends on this project, this
 # file won't be loaded nor affect the parent project. For this reason,
@@ -10,11 +12,11 @@ use Mix.Config
 
 # You can configure your application as:
 #
-#     config :fun_logger_backend, key: :value
+#     config :process_logger_backend, key: :value
 #
 # and access this configuration in your application as:
 #
-#     Application.get_env(:fun_logger_backend, :key)
+#     Application.get_env(:process_logger_backend, :key)
 #
 # You can also configure a 3rd-party app:
 #

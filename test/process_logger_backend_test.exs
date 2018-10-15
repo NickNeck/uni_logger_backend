@@ -1,8 +1,8 @@
-defmodule ProcessLoggerBackendeTest do
+defmodule ProcessLoggerBackendTest do
   use ExUnit.Case
   require Logger
 
-  @backend {ProcessLoggerBackende, :console}
+  @backend {ProcessLoggerBackend, :console}
 
   setup do
     {:ok, pid} = Logger.add_backend(@backend)
@@ -88,6 +88,14 @@ defmodule ProcessLoggerBackendeTest do
 
     Logger.error("test")
     assert_receive {:error, {:error, "test", ts, meta}, ts, meta}
+  end
+
+  test "adds additional meta" do
+    Logger.configure_backend(@backend, meta: [foo: "bar"])
+
+    Logger.error("test")
+    assert_receive {:error, "test", _, meta}
+    assert {:foo, "bar"} in meta
   end
 
   describe "logging on debug" do

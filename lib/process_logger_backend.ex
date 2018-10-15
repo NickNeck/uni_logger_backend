@@ -1,12 +1,47 @@
-defmodule ProcessLoggerBackende do
+defmodule ProcessLoggerBackend do
   @moduledoc """
-  Documentation for ProcessLoggerBackende.
+  Documentation for ProcessLoggerBackend.
   """
 
   @behaviour :gen_event
 
-  @enforce_keys [:name]
-  defstruct level: :info, pid: nil, meta: [], name: nil, format: nil
+  defmodule Config do
+    @moduledoc """
+    Configuration and internal state of the `LoggerBackend`.
+    """
+
+    @typedoc """
+    A formatter to format the log msg before sending. It can be either a
+    function or a tuple with a module and a function name.
+
+    The functions receives the log msg, a timestamp as a erlang time tuple and
+    the metadata as arguments and should return the formatted log msg.
+    """
+    @type formatter ::
+            {module, atom}
+            | (Logger.level(), String.t(), tuple, Logger.meta() -> any)
+
+    @typedoc """
+    Serves as internal state of the `ProcessLoggerBackend` and as config.
+
+    * `level` - Specifies the log level.
+    * `pid` - Specifies the process pid or name that receives the log messages.
+    * `meta` - Additional metadata that will be added to the metadata before
+      formatting.
+    * `name` - The name of the lggger. This cannot be overridden.
+    * `format` - A optional function that is used to format the log messages
+      before sending. See `formatter()`.
+    """
+    @type t :: %__MODULE__{
+            level: Logger.level(),
+            pid: GenServer.name(),
+            meta: Logger.metadata(),
+            name: atom,
+            format: nil | formatter
+          }
+    @enforce_keys [:name]
+    defstruct level: :info, pid: nil, meta: [], name: nil, format: nil
+  end
 
   def init({__MODULE__, name}) do
     {:ok, configure(name, [])}
@@ -25,7 +60,7 @@ defmodule ProcessLoggerBackende do
 
     Application.put_env(:logger, name, applied_opts)
 
-    struct!(__MODULE__, applied_opts)
+    struct!(Config, applied_opts)
   end
 
   def handle_event(:flush, state) do
@@ -48,6 +83,7 @@ defmodule ProcessLoggerBackende do
   def handle_event({level, _, {Logger, msg, timestamp, meta}}, state) do
     with true <- should_log?(state, level),
          true <- process_alive?(state.pid),
+         meta <- Keyword.merge(meta, state.meta),
          {:ok, msg} <- format(state.format, [level, msg, timestamp, meta]) do
       send(state.pid, {level, msg, timestamp, meta})
     end
@@ -75,9 +111,5 @@ defmodule ProcessLoggerBackende do
     {:ok, apply(mod, fun, args)}
   rescue
     _ -> :error
-  end
-
-  def handle_info(_msg, state) do
-    {:ok, state}
   end
 end

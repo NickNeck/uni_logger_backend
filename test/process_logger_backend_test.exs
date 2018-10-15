@@ -6,7 +6,7 @@ defmodule ProcessLoggerBackendTest do
 
   setup do
     {:ok, pid} = Logger.add_backend(@backend)
-    Logger.configure_backend(@backend, pid: self(), format: nil)
+    Logger.configure_backend(@backend, pid: self(), formatter: nil, meta: [])
 
     on_exit(fn ->
       Logger.remove_backend(@backend)
@@ -65,7 +65,7 @@ defmodule ProcessLoggerBackendTest do
       {lvl, msg, ts, meta}
     end
 
-    Logger.configure_backend(@backend, format: formatter)
+    Logger.configure_backend(@backend, formatter: formatter)
 
     Logger.error("test")
     assert_receive {:error, {:error, "test", ts, meta}, ts, meta}
@@ -76,7 +76,7 @@ defmodule ProcessLoggerBackendTest do
       raise "foo"
     end
 
-    Logger.configure_backend(@backend, format: formatter)
+    Logger.configure_backend(@backend, formatter: formatter)
 
     Logger.error("test")
     refute_receive _
@@ -84,7 +84,7 @@ defmodule ProcessLoggerBackendTest do
   end
 
   test "formatting messages with a module and a function" do
-    Logger.configure_backend(@backend, format: {__MODULE__, :format_msg})
+    Logger.configure_backend(@backend, formatter: {__MODULE__, :format_msg})
 
     Logger.error("test")
     assert_receive {:error, {:error, "test", ts, meta}, ts, meta}

@@ -29,7 +29,7 @@ defmodule ProcessLoggerBackend do
     * `meta` - Additional metadata that will be added to the metadata before
       formatting.
     * `name` - The name of the lggger. This cannot be overridden.
-    * `format` - A optional function that is used to format the log messages
+    * `formatter` - A optional function that is used to format the log messages
       before sending. See `formatter()`.
     """
     @type t :: %__MODULE__{
@@ -37,10 +37,10 @@ defmodule ProcessLoggerBackend do
             pid: GenServer.name(),
             meta: Logger.metadata(),
             name: atom,
-            format: nil | formatter
+            formatter: nil | formatter
           }
     @enforce_keys [:name]
-    defstruct level: :info, pid: nil, meta: [], name: nil, format: nil
+    defstruct level: :info, pid: nil, meta: [], name: nil, formatter: nil
   end
 
   def init({__MODULE__, name}) do
@@ -84,7 +84,7 @@ defmodule ProcessLoggerBackend do
     with true <- should_log?(state, level),
          true <- process_alive?(state.pid),
          meta <- Keyword.merge(meta, state.meta),
-         {:ok, msg} <- format(state.format, [level, msg, timestamp, meta]) do
+         {:ok, msg} <- format(state.formatter, [level, msg, timestamp, meta]) do
       send(state.pid, {level, msg, timestamp, meta})
     end
 

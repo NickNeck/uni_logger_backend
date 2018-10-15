@@ -41,13 +41,17 @@ defmodule ProcessLoggerBackende do
     {:ok, state}
   end
 
-  def handle_event({level, group_leader, {Logger, msg, ts, md}}, state) do
-    if Logger.compare_levels(level, state.level) != :lt do
-      send(state.pid, {level, msg})
+  def handle_event({level, group_leader, {Logger, msg, timestamp, meta}}, state) do
+    with res when res != :lt <- Logger.compare_levels(level, state.level),
+         true <- process_alive?(state.pid) do
+      send(state.pid, {level, msg, timestamp, meta})
     end
 
     {:ok, state}
   end
+
+  defp process_alive?(pid) when is_pid(pid), do: Process.alive?(pid)
+  defp process_alive?(name) when is_atom(name), do: Process.whereis(name) != nil
 
   def handle_info(_msg, state) do
     {:ok, state}

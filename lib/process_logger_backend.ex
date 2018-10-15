@@ -8,7 +8,7 @@ defmodule ProcessLoggerBackende do
   @enforce_keys [:name]
   defstruct level: :info, pid: nil, meta: [], name: nil
 
-  def init({__MODULE__, name} = opts) do
+  def init({__MODULE__, name}) do
     {:ok, configure(name, [])}
   end
 
@@ -29,6 +29,10 @@ defmodule ProcessLoggerBackende do
   end
 
   def handle_event(:flush, state) do
+    if process_alive?(state.pid) do
+      send(state.pid, :flush)
+    end
+
     {:ok, state}
   end
 
@@ -41,7 +45,7 @@ defmodule ProcessLoggerBackende do
     {:ok, state}
   end
 
-  def handle_event({level, group_leader, {Logger, msg, timestamp, meta}}, state) do
+  def handle_event({level, _, {Logger, msg, timestamp, meta}}, state) do
     with res when res != :lt <- Logger.compare_levels(level, state.level),
          true <- process_alive?(state.pid) do
       send(state.pid, {level, msg, timestamp, meta})

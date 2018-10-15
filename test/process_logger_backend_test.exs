@@ -13,7 +13,7 @@ defmodule ProcessLoggerBackendeTest do
     Logger.configure_backend(@backend, pid: self())
   end
 
-  test "sends messages to processes referenced by name", %{test: name} do
+  test "sends messages to processes referenced by name" do
     Process.register(self(), :test_logger_name)
 
     Logger.configure_backend(@backend, pid: :test_logger_name)
@@ -53,9 +53,14 @@ defmodule ProcessLoggerBackendeTest do
            ] == meta
   end
 
+  test "flush" do
+    Logger.flush()
+    assert_receive :flush
+  end
+
   describe "logging on debug" do
     setup do
-      Logger.configure_backend(@backend, pid: self(), level: :debug)
+      Logger.configure_backend(@backend, level: :debug)
     end
 
     test "receives debug msg" do
@@ -81,7 +86,7 @@ defmodule ProcessLoggerBackendeTest do
 
   describe "logging on info" do
     setup do
-      Logger.configure_backend(@backend, pid: self(), level: :info)
+      Logger.configure_backend(@backend, level: :info)
     end
 
     test "does not receive debug msg" do
@@ -107,7 +112,7 @@ defmodule ProcessLoggerBackendeTest do
 
   describe "logging on warn" do
     setup do
-      Logger.configure_backend(@backend, pid: self(), level: :warn)
+      Logger.configure_backend(@backend, level: :warn)
     end
 
     test "does not receive debug msg" do
@@ -133,7 +138,7 @@ defmodule ProcessLoggerBackendeTest do
 
   describe "logging on error" do
     setup do
-      Logger.configure_backend(@backend, pid: self(), level: :error)
+      Logger.configure_backend(@backend, level: :error)
     end
 
     test "does not receive debug msg" do

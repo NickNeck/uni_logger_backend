@@ -71,6 +71,18 @@ defmodule ProcessLoggerBackendeTest do
     assert_receive {:error, {:error, "test", ts, meta}, ts, meta}
   end
 
+  test "if formatter raises a error backend does not crash", %{pid: pid} do
+    formatter = fn _, _, _, _ ->
+      raise "foo"
+    end
+
+    Logger.configure_backend(@backend, format: formatter)
+
+    Logger.error("test")
+    refute_receive _
+    assert Process.alive?(pid)
+  end
+
   test "formatting messages with a module and a function" do
     Logger.configure_backend(@backend, format: {__MODULE__, :format_msg})
 

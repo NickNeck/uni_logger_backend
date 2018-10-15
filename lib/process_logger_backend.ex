@@ -46,21 +46,36 @@ defmodule ProcessLoggerBackende do
   end
 
   def handle_event({level, _, {Logger, msg, timestamp, meta}}, state) do
-    with res when res != :lt <- Logger.compare_levels(level, state.level),
-         true <- process_alive?(state.pid) do
-      msg = format(state.format, [level, msg, timestamp, meta])
+    with true <- should_log?(state, level),
+         true <- process_alive?(state.pid),
+         {:ok, msg} <- format(state.format, [level, msg, timestamp, meta]) do
       send(state.pid, {level, msg, timestamp, meta})
     end
 
     {:ok, state}
   end
 
+  defp should_log?(%{level: right}, left),
+    do: :lt != Logger.compare_levels(left, right)
+
   defp process_alive?(pid) when is_pid(pid), do: Process.alive?(pid)
   defp process_alive?(name) when is_atom(name), do: Process.whereis(name) != nil
 
-  defp format(nil, [_, msg, _, _]), do: msg
-  defp format({mod, fun}, args), do: apply(mod, fun, args)
-  defp format(fun, args), do: apply(fun, args)
+  defp format(nil, [_, msg, _, _]), do: {:ok, msg}
+  defp format({mod, fun}, args), do: do_apply(mod, fun, args)
+  defp format(fun, args), do: do_apply(fun, args)
+
+  defp do_apply(fun, args) do
+    {:ok, apply(fun, args)}
+  rescue
+    _ -> :error
+  end
+
+  defp do_apply(mod, fun, args) do
+    {:ok, apply(mod, fun, args)}
+  rescue
+    _ -> :error
+  end
 
   def handle_info(_msg, state) do
     {:ok, state}

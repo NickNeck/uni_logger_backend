@@ -1,48 +1,54 @@
 defmodule ProcessLoggerBackend do
   @moduledoc """
+  A logger backend that forwards log messages
   Documentation for ProcessLoggerBackend.
   """
 
+  alias ProcessLoggerBackend.Config
+
   @behaviour :gen_event
 
-  defmodule Config do
-    @moduledoc """
-    Configuration and internal state of the `LoggerBackend`.
-    """
+  @typedoc "Type for timestamps"
+  @type timestamp :: :calendar.datetime()
 
-    @typedoc """
-    A formatter to format the log msg before sending. It can be either a
-    function or a tuple with a module and a function name.
+  @typedoc "Type for metadata"
+  @type metadata :: Logger.metadata()
 
-    The functions receives the log msg, a timestamp as a erlang time tuple and
-    the metadata as arguments and should return the formatted log msg.
-    """
-    @type formatter ::
-            {module, atom}
-            | (Logger.level(), String.t(), tuple, Logger.meta() -> any)
+  @typedoc "Type for messages"
+  @type msg :: any
 
-    @typedoc """
-    Serves as internal state of the `ProcessLoggerBackend` and as config.
+  @typedoc "Type for log levels"
+  @type level :: Logger.level()
 
-    * `level` - Specifies the log level.
-    * `pid` - Specifies the process pid or name that receives the log messages.
-    * `meta` - Additional metadata that will be added to the metadata before
-      formatting.
-    * `name` - The name of the lggger. This cannot be overridden.
-    * `formatter` - A optional function that is used to format the log messages
-      before sending. See `formatter()`.
-    """
-    @type t :: %__MODULE__{
-            level: Logger.level(),
-            pid: GenServer.name(),
-            meta: Logger.metadata(),
-            name: atom,
-            formatter: nil | formatter
-          }
-    @enforce_keys [:name]
-    defstruct level: :info, pid: nil, meta: [], name: nil, formatter: nil
-  end
+  @typedoc """
+  A formatter to format the log msg before sending. It can be either a
+  function or a tuple with a module and a function name.
 
+  The functions receives the log msg, a timestamp as a erlang time tuple and
+  the metadata as arguments and should return the formatted log msg.
+  """
+  @type formatter :: {module, atom} | (level, msg, timestamp, metadata -> any)
+
+  @typedoc """
+  Serves as internal state of the `ProcessLoggerBackend` and as config.
+
+  * `level` - Specifies the log level.
+  * `pid` - Specifies the process pid or name that receives the log messages.
+  * `meta` - Additional metadata that will be added to the metadata before
+    formatting.
+  * `name` - The name of the lggger. This cannot be overridden.
+  * `formatter` - A optional function that is used to format the log messages
+    before sending. See `formatter()`.
+  """
+  @type state :: %Config{
+          level: level,
+          pid: GenServer.name(),
+          meta: metadata,
+          name: atom,
+          formatter: nil | formatter
+        }
+
+  @spec init({module, atom}) :: {:ok, state}
   def init({__MODULE__, name}) do
     {:ok, configure(name, [])}
   end

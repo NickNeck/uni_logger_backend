@@ -4,13 +4,15 @@ defmodule ProcessLoggerBackendeTest do
 
   @backend {ProcessLoggerBackende, :console}
 
-  setup_all do
-    {:ok, pid} = Logger.add_backend(@backend)
-    {:ok, pid: pid}
-  end
-
   setup do
-    Logger.configure_backend(@backend, pid: self())
+    {:ok, pid} = Logger.add_backend(@backend)
+    Logger.configure_backend(@backend, pid: self(), format: nil)
+
+    on_exit(fn ->
+      Logger.remove_backend(@backend)
+    end)
+
+    {:ok, pid: pid}
   end
 
   test "sends messages to processes referenced by name" do
@@ -46,7 +48,7 @@ defmodule ProcessLoggerBackendeTest do
 
     assert [
              pid: self(),
-             line: 44,
+             line: 46,
              function: "#{context.test}/1",
              module: __ENV__.module,
              file: __ENV__.file
@@ -56,6 +58,24 @@ defmodule ProcessLoggerBackendeTest do
   test "flush" do
     Logger.flush()
     assert_receive :flush
+  end
+
+  test "formatting messages with a function" do
+    formatter = fn lvl, msg, ts, meta ->
+      {lvl, msg, ts, meta}
+    end
+
+    Logger.configure_backend(@backend, format: formatter)
+
+    Logger.error("test")
+    assert_receive {:error, {:error, "test", ts, meta}, ts, meta}
+  end
+
+  test "formatting messages with a module and a function" do
+    Logger.configure_backend(@backend, format: {__MODULE__, :format_msg})
+
+    Logger.error("test")
+    assert_receive {:error, {:error, "test", ts, meta}, ts, meta}
   end
 
   describe "logging on debug" do
@@ -160,5 +180,9 @@ defmodule ProcessLoggerBackendeTest do
       Logger.error("test")
       assert_receive {:error, "test", _, _}
     end
+  end
+
+  def format_msg(level, msg, timestamp, meta) do
+    {level, msg, timestamp, meta}
   end
 end

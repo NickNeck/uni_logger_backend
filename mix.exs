@@ -4,6 +4,8 @@ defmodule UniLoggerBackend.MixProject do
   def project do
     [
       app: :uni_logger_backend,
+      aliases: aliases(),
+      package: package(),
       deps: deps(),
       elixir: "~> 1.7",
       preferred_cli_env: [
@@ -14,7 +16,11 @@ defmodule UniLoggerBackend.MixProject do
       ],
       start_permanent: Mix.env() == :prod,
       test_coverage: [tool: ExCoveralls],
-      version: "0.1.0"
+      version: "0.1.0",
+      docs: [
+        main: "readme",
+        extras: ["README.md"]
+      ]
     ]
   end
 
@@ -25,6 +31,19 @@ defmodule UniLoggerBackend.MixProject do
     ]
   end
 
+  defp package do
+    [
+      licenses: ["Apache 2.0"],
+      maintainers: ["Kristopher Bredemeier"],
+      files: ["lib", "mix.exs", "LICENSE", "README.md"],
+      links: %{
+        "GitHub" => "https://github.com/kbredemeier/uni_logger_backend",
+        "Docs" => "https://hexdocs.pm/uni_logger_backend/index.html"
+      },
+      description: "A logger backend that logs to processes or functions"
+    ]
+  end
+
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
@@ -32,6 +51,12 @@ defmodule UniLoggerBackend.MixProject do
       {:dialyxir, "~> 1.0.0-rc.3", only: [:dev], runtime: false},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:excoveralls, "~> 0.10", only: :test}
+    ]
+  end
+
+  defp aliases do
+    [
+      test: ["credo", "test"]
     ]
   end
 end

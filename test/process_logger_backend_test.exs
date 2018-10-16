@@ -6,7 +6,8 @@ defmodule ProcessLoggerBackendTest do
 
   setup do
     {:ok, pid} = Logger.add_backend(@backend)
-    Logger.configure_backend(@backend, pid: self(), formatter: nil, meta: [])
+
+    Logger.configure_backend(@backend, pid: self(), formatter: nil, metadata: [])
 
     on_exit(fn ->
       Logger.remove_backend(@backend)
@@ -44,15 +45,15 @@ defmodule ProcessLoggerBackendTest do
 
   test "sends metadata", context do
     Logger.error("test")
-    assert_receive {:error, "test", _, meta}
+    assert_receive {:error, "test", _, metadata}
 
     assert [
              pid: self(),
-             line: 46,
+             line: 47,
              function: "#{context.test}/1",
              module: __ENV__.module,
              file: __ENV__.file
-           ] == meta
+           ] == metadata
   end
 
   test "flush" do
@@ -90,8 +91,8 @@ defmodule ProcessLoggerBackendTest do
     assert_receive {:error, {:error, "test", ts, meta}, ts, meta}
   end
 
-  test "adds additional meta" do
-    Logger.configure_backend(@backend, meta: [foo: "bar"])
+  test "adds additional metadata" do
+    Logger.configure_backend(@backend, metadata: [foo: "bar"])
 
     Logger.error("test")
     assert_receive {:error, "test", _, meta}

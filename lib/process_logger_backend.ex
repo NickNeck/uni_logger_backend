@@ -82,7 +82,7 @@ defmodule ProcessLoggerBackend do
   @type state :: %Config{
           level: level,
           pid: GenServer.name(),
-          meta: metadata,
+          metadata: metadata,
           name: atom,
           formatter: nil | formatter
         }
@@ -129,7 +129,7 @@ defmodule ProcessLoggerBackend do
   def handle_event({level, _, {Logger, msg, timestamp, meta}}, state) do
     with true <- should_log?(state, level),
          true <- process_alive?(state.pid),
-         meta <- Keyword.merge(meta, state.meta),
+         meta <- Keyword.merge(meta, state.metadata),
          {:ok, msg} <- format(state.formatter, [level, msg, timestamp, meta]) do
       send(state.pid, {level, msg, timestamp, meta})
     end

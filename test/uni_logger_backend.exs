@@ -1,8 +1,8 @@
-defmodule ProcessLoggerBackendTest do
+defmodule UniLoggerBackendTest do
   use ExUnit.Case
   require Logger
 
-  @backend {ProcessLoggerBackend, :console}
+  @backend {UniLoggerBackend, :console}
 
   setup do
     {:ok, pid} = Logger.add_backend(@backend)

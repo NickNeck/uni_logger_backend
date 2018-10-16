@@ -1,4 +1,4 @@
-defmodule ProcessLoggerBackend do
+defmodule UniLoggerBackend do
   @moduledoc """
   A logger backend that forwards log messages to a process.
 
@@ -9,7 +9,7 @@ defmodule ProcessLoggerBackend do
   ```
   # config/config.exs
 
-  config :logger, :backends, [{ProcessLoggerBackend, :console}]
+  config :logger, :backends, [{UniLoggerBackend, :console}]
 
   config :logger, level: :info
   ```
@@ -19,7 +19,7 @@ defmodule ProcessLoggerBackend do
   `GenServer` that should receive the log messages:
 
   ```
-  Logger.configure_backend({ProcessLoggerBackend, :console}, pid: self())
+  Logger.configure_backend({UniLoggerBackend, :console}, pid: self())
 
   receive do
     {level, msg, timestamp, meta} -> IO.puts "Received log"
@@ -33,7 +33,7 @@ defmodule ProcessLoggerBackend do
   when the logger is flushed by calling `Logger.flush/0`.
   """
 
-  alias ProcessLoggerBackend.Config
+  alias UniLoggerBackend.Config
 
   @behaviour :gen_event
 
@@ -81,7 +81,7 @@ defmodule ProcessLoggerBackend do
   @type formatter :: {module, atom} | (level, msg, timestamp, metadata -> any)
 
   @typedoc """
-  Serves as internal state of the `ProcessLoggerBackend` and as config.
+  Serves as internal state of the `UniLoggerBackend` and as config.
 
   * `level` - Specifies the log level.
   * `target` - Specifies the target for the log messages.

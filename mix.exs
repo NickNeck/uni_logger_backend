@@ -1,9 +1,9 @@
-defmodule ProcessLoggerBackend.MixProject do
+defmodule UniLoggerBackend.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :process_logger_backend,
+      app: :uni_logger_backend,
       deps: deps(),
       elixir: "~> 1.7",
       preferred_cli_env: [

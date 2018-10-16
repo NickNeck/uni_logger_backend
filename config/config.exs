@@ -12,11 +12,11 @@ config :logger, :backends, []
 
 # You can configure your application as:
 #
-#     config :process_logger_backend, key: :value
+#     config :uni_logger_backend, key: :value
 #
 # and access this configuration in your application as:
 #
-#     Application.get_env(:process_logger_backend, :key)
+#     Application.get_env(:uni_logger_backend, :key)
 #
 # You can also configure a 3rd-party app:
 #

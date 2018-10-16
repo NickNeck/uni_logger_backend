@@ -1,16 +1,16 @@
-# ProcessLoggerBackend
+# UniLoggerBackend
 
 **TODO: Add description**
 
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `fun_logger_backend` to your list of dependencies in `mix.exs`:
+by adding `uni_logger_backend` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:fun_logger_backend, "~> 0.1.0"}
+    {:uni_logger_backend, "~> 0.1.0"}
   ]
 end
 ```

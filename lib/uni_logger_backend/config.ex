@@ -1,4 +1,4 @@
-defmodule ProcessLoggerBackend.Config do
+defmodule UniLoggerBackend.Config do
   @moduledoc """
   Configuration and internal state of the `LoggerBackend`.
   """

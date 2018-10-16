@@ -184,10 +184,14 @@ defmodule ProcessLoggerBackend do
   defp send_to_target(target, level, msg, timestamp, meta)
        when is_function(target) do
     apply(target, [level, msg, timestamp, meta])
+  rescue
+    _ -> nil
   end
 
   defp send_to_target({module, fun_name}, level, msg, timestamp, meta) do
     apply(module, fun_name, [level, msg, timestamp, meta])
+  rescue
+    _ -> nil
   end
 
   defp send_to_target(target, level, msg, timestamp, meta) do

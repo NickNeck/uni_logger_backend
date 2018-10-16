@@ -103,7 +103,7 @@ defmodule ProcessLoggerBackendTest do
     assert {:foo, "bar"} in meta
   end
 
-  test "works with functions" do
+  test "target is a function" do
     pid = self()
 
     fun = fn level, msg, timestamp, meta ->
@@ -115,7 +115,18 @@ defmodule ProcessLoggerBackendTest do
     assert_receive {:hello_fun, :error, "test", _, _}
   end
 
-  test "works with modules and functions" do
+  test "does not crash if function target raises", %{pid: pid} do
+    fun = fn _, _, _, _ ->
+      raise "arhg!"
+    end
+
+    Logger.configure_backend(@backend, target: fun)
+    Logger.error("test")
+    refute_receive _
+    assert Process.alive?(pid)
+  end
+
+  test "target is a module function tuple" do
     Logger.configure_backend(@backend, target: {__MODULE__, :log_handler})
     {:ok, pid} = Agent.start_link(fn -> nil end, name: :log_handler)
     Logger.error("test")
@@ -123,6 +134,16 @@ defmodule ProcessLoggerBackendTest do
 
     assert {:error, "test", _, _} =
              Agent.get(:log_handler, fn state -> state end)
+  end
+
+  test "does not crash if module function tuple target raises", %{pid: pid} do
+    Logger.configure_backend(@backend,
+      target: {__MODULE__, :raising_log_handler}
+    )
+
+    Logger.error("test")
+    refute_receive _
+    assert Process.alive?(pid)
   end
 
   describe "logging on debug" do
@@ -235,5 +256,9 @@ defmodule ProcessLoggerBackendTest do
 
   def log_handler(level, msg, timestamp, meta) do
     Agent.update(:log_handler, fn _ -> {level, msg, timestamp, meta} end)
+  end
+
+  def raising_log_handler(_, _, _, _) do
+    raise "argh!"
   end
 end

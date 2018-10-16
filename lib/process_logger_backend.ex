@@ -38,7 +38,7 @@ defmodule ProcessLoggerBackend do
   @behaviour :gen_event
 
   @typedoc "Type for timestamps"
-  @type timestamp :: :calendar.datetime()
+  @type timestamp :: Logger.Formatter.time()
 
   @typedoc "Type for metadata"
   @type metadata :: Logger.metadata()
@@ -49,10 +49,22 @@ defmodule ProcessLoggerBackend do
   @typedoc "Type for log levels"
   @type level :: Logger.level()
 
+  @typedoc """
+  Type for targes.
+
+  A target can either be a `pid`, a registered process name or a function with
+  arity 4. The function receives the log level, the message, a timestamp and the
+  metadata as arguments. Processes need to implement `handle_info/2` and with
+  receive the same info as a tuple. Processes are also expected to implement
+  `handle_info/2` for `:flush` messages. These messages are intended to flush
+  the all pending messages.
+  """
+  @type target :: GenServer.name() | (level, msg, timestamp, metadata -> any)
+
   @typedoc "Options to configure the backend"
   @type opt ::
           {:level, level}
-          | {:pid, GenServer.name()}
+          | {:target, target}
           | {:meta, metadata}
           | {:formatter, formatter}
 
@@ -72,7 +84,7 @@ defmodule ProcessLoggerBackend do
   Serves as internal state of the `ProcessLoggerBackend` and as config.
 
   * `level` - Specifies the log level.
-  * `pid` - Specifies the process pid or name that receives the log messages.
+  * `target` - Specifies the target for the log messages.
   * `meta` - Additional metadata that will be added to the metadata before
     formatting.
   * `name` - The name of the lggger. This cannot be overridden.
@@ -81,7 +93,7 @@ defmodule ProcessLoggerBackend do
   """
   @type state :: %Config{
           level: level,
-          pid: GenServer.name(),
+          target: target,
           metadata: metadata,
           name: atom,
           formatter: nil | formatter
@@ -109,9 +121,16 @@ defmodule ProcessLoggerBackend do
     struct!(Config, applied_opts)
   end
 
+  # Dont flush if target is a function or a function  model tupple
+  def handle_event(:flush, %{target: target} = state)
+      when is_function(target)
+      when is_tuple(target) do
+    {:ok, state}
+  end
+
   def handle_event(:flush, state) do
-    if process_alive?(state.pid) do
-      send(state.pid, :flush)
+    if process_alive?(state.target) do
+      send(state.target, :flush)
     end
 
     {:ok, state}
@@ -122,16 +141,18 @@ defmodule ProcessLoggerBackend do
     {:ok, state}
   end
 
-  def handle_event(_, %{pid: nil} = state) do
+  def handle_event(_, %{target: nil} = state) do
     {:ok, state}
   end
 
-  def handle_event({level, _, {Logger, msg, timestamp, meta}}, state) do
+  def handle_event(
+        {level, _, {Logger, msg, timestamp, meta}},
+        %{target: target} = state
+      ) do
     with true <- should_log?(state, level),
-         true <- process_alive?(state.pid),
          meta <- Keyword.merge(meta, state.metadata),
          {:ok, msg} <- format(state.formatter, [level, msg, timestamp, meta]) do
-      send(state.pid, {level, msg, timestamp, meta})
+      send_to_target(target, level, msg, timestamp, meta)
     end
 
     {:ok, state}
@@ -141,25 +162,40 @@ defmodule ProcessLoggerBackend do
   defp should_log?(%{level: right}, left),
     do: :lt != Logger.compare_levels(left, right)
 
-  @spec process_alive?(GenServer.name()) :: boolean
-  defp process_alive?(pid) when is_pid(pid), do: Process.alive?(pid)
-  defp process_alive?(name) when is_atom(name), do: Process.whereis(name) != nil
-
   defp format(nil, [_, msg, _, _]), do: {:ok, msg}
-  defp format({mod, fun}, args), do: do_apply(mod, fun, args)
-  defp format(fun, args), do: do_apply(fun, args)
+  defp format({mod, fun}, args), do: do_format(mod, fun, args)
+  defp format(fun, args), do: do_format(fun, args)
 
-  @spec do_apply(function, list) :: {:ok, any} | :error
-  defp do_apply(fun, args) do
+  @spec do_format(function, list) :: {:ok, any} | :error
+  defp do_format(fun, args) do
     {:ok, apply(fun, args)}
   rescue
     _ -> :error
   end
 
-  @spec do_apply(module, atom, list) :: {:ok, any} | :error
-  defp do_apply(mod, fun, args) do
+  @spec do_format(module, atom, list) :: {:ok, any} | :error
+  defp do_format(mod, fun, args) do
     {:ok, apply(mod, fun, args)}
   rescue
     _ -> :error
   end
+
+  @spec send_to_target(target, level, msg, timestamp, metadata) :: any
+  defp send_to_target(target, level, msg, timestamp, meta)
+       when is_function(target) do
+    apply(target, [level, msg, timestamp, meta])
+  end
+
+  defp send_to_target({module, fun_name}, level, msg, timestamp, meta) do
+    apply(module, fun_name, [level, msg, timestamp, meta])
+  end
+
+  defp send_to_target(target, level, msg, timestamp, meta) do
+    if process_alive?(target),
+      do: send(target, {level, msg, timestamp, meta})
+  end
+
+  @spec process_alive?(GenServer.name()) :: boolean
+  defp process_alive?(pid) when is_pid(pid), do: Process.alive?(pid)
+  defp process_alive?(name) when is_atom(name), do: Process.whereis(name) != nil
 end

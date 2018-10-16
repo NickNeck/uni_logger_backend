@@ -4,5 +4,5 @@ defmodule ProcessLoggerBackend.Config do
   """
 
   @enforce_keys [:name]
-  defstruct level: :info, pid: nil, metadata: [], name: nil, formatter: nil
+  defstruct level: :info, target: nil, metadata: [], name: nil, formatter: nil
 end

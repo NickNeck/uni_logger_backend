@@ -37,8 +37,7 @@ defmodule UniLoggerBackend.MixProject do
       maintainers: ["Kristopher Bredemeier"],
       files: ["lib", "mix.exs", "LICENSE", "README.md"],
       links: %{
-        "GitHub" => "https://github.com/kbredemeier/uni_logger_backend",
-        "Docs" => "https://hexdocs.pm/uni_logger_backend/index.html"
+        "GitHub" => "https://github.com/kbredemeier/uni_logger_backend"
       },
       description: "A logger backend that logs to processes or functions"
     ]
